@@ -1,0 +1,726 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>نظام المحاسبة والحوالات المتكامل</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; background-color: #f4f7fc; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        
+        .app-container { width: 100%; max-width: 412px; height: 100vh; background-color: #ffffff; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.08); }
+        .app-header { width: 100%; height: 60px; background-color: #ffffff; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; color: #1e293b; flex-shrink: 0; }
+        .main-viewport { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; }
+        
+        .page-content { display: none; width: 100%; }
+        .page-content.active-page { display: block; }
+        .section-title { font-size: 15px; font-weight: 700; color: #0f172a; margin: 20px 0 10px 0; }
+
+        /* ================= الواجهة الرئيسية (ثابتة ومحمية) ================= */
+        .my-box-card { background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 16px; padding: 20px; color: #ffffff; margin-bottom: 15px; }
+        .box-balance-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .box-balance-row:last-child { margin-bottom: 0; }
+        .box-balance-row .amount { font-size: 22px; font-weight: 700; direction: ltr; }
+
+        .quick-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .btn-panel { border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; }
+        .btn-deposit { background-color: #10b981; }
+        .btn-withdraw { background-color: #ef4444; }
+
+        .action-form-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 20px; display: none; }
+        .form-control { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; margin-bottom: 10px; font-size: 14px; }
+        .form-row-select { display: flex; gap: 8px; margin-bottom: 10px; }
+        .form-row-select select, .form-row-select input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; font-size: 14px; }
+        .form-row-select select { font-weight: 700; }
+        .btn-submit-operation { width: 100%; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+        .log-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn-text-action { background: none; border: none; font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+        .btn-export { color: #0284c7; }
+        .btn-clear-log { color: #ef4444; }
+        
+        .log-container { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; max-height: 220px; overflow-y: auto; }
+        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        .log-item:last-child { border-bottom: none; }
+        .log-details { display: flex; flex-direction: column; gap: 2px; }
+        .log-title { font-weight: 600; color: #1e293b; }
+        .log-date { font-size: 11px; color: #94a3b8; }
+        .log-amount { font-weight: 700; direction: ltr; }
+        .amt-deposit { color: #10b981; }
+        .amt-withdraw { color: #ef4444; }
+        .empty-log-msg { padding: 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+
+        /* ================= واجهة التسويات (المصححة والمحسنة محاسبياً) ================= */
+        .settle-form-wrapper { background: #f8fafc; padding: 16px; border-radius: 14px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        .search-container { position: relative; margin-bottom: 12px; }
+        .search-container input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; outline: none; background: #ffffff; }
+        
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; width: 100%; background: #ffffff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; max-height: 150px; overflow-y: auto; z-index: 999; display: none; }
+        .autocomplete-item { padding: 10px; cursor: pointer; font-size: 13px; color: #334155; text-align: right; border-bottom: 1px solid #f1f5f9; }
+        .autocomplete-item:hover { background: #f1f5f9; }
+        
+        .calculation-preview { background: #e0f2fe; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 15px; font-size: 13px; color: #0369a1; font-weight: 500; }
+        .calculation-preview span { font-weight: 700; direction: ltr; display: inline-block; }
+        .btn-action-execute { width: 100%; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 5px; }
+
+        /* ================= واجهة دليل العملاء المطور ================= */
+        .market-stats-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-box { background: #ffffff; border: 1px solid #f1f5f9; border-radius: 8px; padding: 8px; text-align: center; }
+        .stat-box p { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+        .stat-box span { font-size: 13px; font-weight: 700; display: block; direction: ltr; }
+        .stat-positive { color: #10b981; } /* لنا معه */
+        .stat-negative { color: #ef4444; } /* له معنا */
+
+        .input-form-box { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        .flex-input-group { display: flex; gap: 8px; }
+        .flex-input-group input { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; }
+        .btn-submit { background: #0284c7; color: white; border: none; padding: 0 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+        .search-filter-box { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; margin-bottom: 12px; background: #ffffff; }
+
+        .client-item-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+        .client-item-trigger { display: flex; justify-content: space-between; align-items: center; padding: 14px; cursor: pointer; }
+        .client-title { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #334155; }
+        .arrow-indicator { transition: transform 0.2s; font-size: 11px; color: #64748b; }
+        .client-item-card.open .arrow-indicator { transform: rotate(180deg); }
+        .client-hidden-panel { display: none; padding: 12px; background: #f8fafc; border-top: 1px solid #f1f5f9; }
+        .client-item-card.open .client-hidden-panel { display: block; }
+        
+        .row-data { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; align-items: center; }
+        .row-data:last-of-type { border-bottom: none; }
+        .row-data .val { font-weight: 700; direction: ltr; }
+        .badge-status { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-right: 5px; display: inline-block; vertical-align: middle; }
+        .badge-us { background: #e0f2fe; color: #0369a1; } /* لنا معه */
+        .badge-them { background: #fee2e2; color: #b91c1c; } /* له معنا */
+        .badge-zero { background: #f1f5f9; color: #475569; } /* متطابق */
+
+        .panel-control-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+        .btn-whatsapp-share { background: #25d366; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .btn-delete-item { background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+
+        /* شريط التنقل السفلي الثابت */
+        .fixed-bottom-navigation { position: absolute; bottom: 0; left: 0; width: 100%; height: 65px; background-color: #ffffff; border-top: 1px solid #f1f5f9; display: flex; z-index: 100; }
+        .navigation-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px; gap: 4px; cursor: pointer; height: 100%; }
+        .navigation-tab.tab-active { color: #0284c7; font-weight: 700; }
+        .tab-icon { font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="app-header" id="globalHeaderTitle">الرئيسية (حالة الصناديق)</div>
+        
+        <div class="main-viewport">
+            
+            <!-- 1. الواجهة الرئيسية (ثابتة ومحمية) -->
+            <div id="view-home" class="page-content active-page">
+                <div class="my-box-card">
+                    <h3 style="font-size: 14px; opacity: 0.8; margin-bottom: 12px; font-weight: 500;">سيولة حساب (صندوقي الأساسي)</h3>
+                    <div class="box-balance-row">
+                        <span>ليرة سورية:</span>
+                        <span class="amount" id="homeSypBox">0 ل.س</span>
+                    </div>
+                    <div class="box-balance-row">
+                        <span>دولار أمريكي:</span>
+                        <span class="amount" id="homeUsdBox">$0</span>
+                    </div>
+                </div>
+
+                <div class="quick-actions-grid">
+                    <button class="btn-panel btn-deposit" onclick="toggleOperationForm('إيداع')">📥 إيداع نقدي</button>
+                    <button class="btn-panel btn-withdraw" onclick="toggleOperationForm('سحب')">📤 سحب نقدي</button>
+                </div>
+
+                <div class="action-form-box" id="operationFormBox">
+                    <p id="formBoxTitle" style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 10px;"></p>
+                    <div class="form-row-select">
+                        <input type="number" id="opAmount" placeholder="المبلغ المالي..." min="0">
+                        <select id="opCurrency">
+                            <option value="ل.س">ليرة سورية</option>
+                            <option value="دولار">دولار أمريكي</option>
+                        </select>
+                    </div>
+                    <input type="text" id="opNote" class="form-control" placeholder="البيان / الملاحظة...">
+                    <button class="btn-submit-operation" id="btnSubmitOp" onclick="executeBoxOperation()">تثبيت الحركة فوراً</button>
+                </div>
+
+                <div class="log-controls">
+                    <div class="section-title" style="margin: 0;">سجل حركات الصندوق المباشرة</div>
+                    <div>
+                        <button class="btn-text-action btn-export" onclick="exportLogToText()">📋 تصدير</button>
+                        <button class="btn-text-action btn-clear-log" onclick="clearOperationLog()">🗑️ مسح السجل</button>
+                    </div>
+                </div>
+
+                <div class="log-container" id="logContainer"></div>
+            </div>
+
+            <!-- 2. واجهة التسويات (المصححة بالكامل والمطابقة لسوق العمل) -->
+            <div id="view-settlements" class="page-content">
+                <div class="settle-form-wrapper">
+                    <p style="font-size: 12px; color: #ef4444; font-weight: bold; margin-bottom: 4px;">مِن الحساب المدين (المُرْسِل - سيُخْصَم منه الصافي + الأجور):</p>
+                    <div class="search-container">
+                        <input type="text" id="debtorSearch" placeholder="ابحث باسم المُرْسِل (مثال: صندوقي)..." oninput="searchClient(this, 'debtorDropdown')">
+                        <div id="debtorDropdown" class="autocomplete-dropdown"></div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #10b981; font-weight: bold; margin-bottom: 4px;">إلى الحساب الدائن (المستفيد - سيصله الصافي فقط):</p>
+                    <div class="search-container">
+                        <input type="text" id="creditorSearch" placeholder="ابحث باسم العميل المستلم الصافي..." oninput="searchClient(this, 'creditorDropdown')">
+                        <div id="creditorDropdown" class="autocomplete-dropdown"></div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #64748b; margin-bottom: 4px;">عملة العملية الحالية:</p>
+                    <div class="form-row-select" style="margin-bottom: 15px;">
+                        <select id="settleCurrency" style="width: 100%; background: #ffffff;" onchange="liveCalculateTotal()">
+                            <option value="ل.س">ليرة سورية (ل.س)</option>
+                            <option value="دولار">دولار أمريكي ($)</option>
+                        </select>
+                    </div>
+
+                    <p style="font-size: 12px; color: #1e293b; font-weight: bold; margin-bottom: 4px;">القيمة الصافية للمستفيد (التي ستدخل حسابه):</p>
+                    <div class="form-row-select">
+                        <input type="number" id="netAmount" placeholder="مثال: 100..." oninput="liveCalculateTotal()">
+                    </div>
+
+                    <p style="font-size: 12px; color: #b45309; font-weight: bold; margin-bottom: 4px;">أجور التحويل المخصصة (تضاف فوراً لأرباح صندوقك):</p>
+                    <div class="form-row-select">
+                        <input type="number" id="transferFees" placeholder="أدخل الأجور إن وجدت..." value="0" oninput="liveCalculateTotal()">
+                    </div>
+
+                    <div class="calculation-preview">
+                        الإجمالي الصادر والمخصوم من المدين: <span id="totalDebtorPreview">0</span>
+                    </div>
+
+                    <button class="btn-action-execute" onclick="commitAccountingSettlement()">تثبيت وترحيل الحوالة وصافي الأجور</button>
+                </div>
+
+                <div class="log-controls">
+                    <div class="section-title" style="margin: 0;">سجل عمليات المقاصة والتسويات</div>
+                    <div>
+                        <button class="btn-text-action btn-export" onclick="exportSettleLogToText()">📋 تصدير</button>
+                        <button class="btn-text-action btn-clear-log" onclick="clearSettleLog()">🗑️ مسح السجل</button>
+                    </div>
+                </div>
+
+                <div class="log-container" id="settleLogContainer"></div>
+            </div>
+
+            <!-- 3. واجهة دليل العملاء (ثابتة ومحفوظة بالكامل) -->
+            <div id="view-clients" class="page-content">
+                
+                <div class="market-stats-card">
+                    <div class="stat-box">
+                        <p>إجمالي الليرة (لنا بالسوق)</p>
+                        <span class="stat-positive" id="statsSypPositive">0 ل.س</span>
+                    </div>
+                    <div class="stat-box">
+                        <p>إجمالي الليرة (ديون علينا)</p>
+                        <span class="stat-negative" id="statsSypNegative">0 ل.س</span>
+                    </div>
+                    <div class="stat-box">
+                        <p>إجمالي الدولار (لنا بالسوق)</p>
+                        <span class="stat-positive" id="statsUsdPositive">$0</span>
+                    </div>
+                    <div class="stat-box">
+                        <p>إجمالي الدولار (ديون علينا)</p>
+                        <span class="stat-negative" id="statsUsdNegative">$0</span>
+                    </div>
+                </div>
+
+                <div class="input-form-box">
+                    <div class="flex-input-group">
+                        <input type="text" id="targetClientName" placeholder="أدخل اسم العميل أو الوكيل الجديد...">
+                        <button class="btn-submit" onclick="insertClient()">إضافة</button>
+                    </div>
+                </div>
+
+                <input type="text" id="clientSearchInput" class="search-filter-box" placeholder="🔍 اكتب هنا للبحث السريع في دليل الأسماء..." oninput="drawClientsDom()">
+
+                <div class="section-title">كشوف حسابات الزبائن والوكلاء الحالية</div>
+                <div id="dynamicClientsList"></div>
+            </div>
+
+        </div>
+
+        <!-- شريط التنقل السفلي الثابت -->
+        <div class="fixed-bottom-navigation">
+            <div class="navigation-tab tab-active" onclick="navigateTo('view-home', 'الرئيسية (حالة الصناديق)', this)">
+                <span class="tab-icon">📊</span><span>الرئيسية</span>
+            </div>
+            <div class="navigation-tab" onclick="navigateTo('view-settlements', 'إجراء تسوية بين الحسابات', this)">
+                <span class="tab-icon">🔄</span><span>التسويات</span>
+            </div>
+            <div class="navigation-tab" onclick="navigateTo('view-clients', 'دليل حسابات العملاء', this)">
+                <span class="tab-icon">👥</span><span>العملاء</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // قواعد البيانات والذاكرة المحلية للمتصفح الأساسية المثبتة
+        let myBoxFunds = JSON.parse(localStorage.getItem('my_box_funds_core')) || { syp: 50000000, usd: 12500 };
+        let boxOperationsLog = JSON.parse(localStorage.getItem('box_operations_log_core')) || [];
+        let settlementsLog = JSON.parse(localStorage.getItem('settlements_log_core')) || [];
+        
+        let systemClients = JSON.parse(localStorage.getItem('accounting_clients_core')) || [
+            { id: 1, name: "مكتب أبو أحمد التجاري", syp: 4500000, usd: -1200 },
+            { id: 2, name: "شركة النور للشحن الدولي", syp: -850000, usd: 3400 }
+        ];
+        let currentActiveOpType = '';
+
+        // [الواجهة الرئيسية] تحديث العرض والأرصدة
+        function refreshHomeUiBalances() {
+            document.getElementById('homeSypBox').innerText = myBoxFunds.syp.toLocaleString() + " ل.س";
+            document.getElementById('homeUsdBox').innerText = (myBoxFunds.usd >= 0 ? "$" : "-$") + Math.abs(myBoxFunds.usd).toLocaleString();
+            localStorage.setItem('my_box_funds_core', JSON.stringify(myBoxFunds));
+        }
+
+        function toggleOperationForm(type) {
+            const formBox = document.getElementById('operationFormBox');
+            if (formBox.style.display === 'block' && currentActiveOpType === type) {
+                formBox.style.display = 'none';
+            } else {
+                currentActiveOpType = type;
+                document.getElementById('formBoxTitle').innerText = `إجراء عملية ${type} نقدي مباشر:`;
+                document.getElementById('btnSubmitOp').innerText = `تأكيد قيد ال${type}`;
+                formBox.style.display = 'block';
+                document.getElementById('opAmount').focus();
+            }
+        }
+
+        function executeBoxOperation() {
+            const amtInput = document.getElementById('opAmount');
+            const currencySelect = document.getElementById('opCurrency');
+            const noteInput = document.getElementById('opNote');
+
+            const amount = parseFloat(amtInput.value);
+            const currency = currencySelect.value;
+            const note = noteInput.value.trim() || "بدون بيان";
+
+            if (isNaN(amount) || amount <= 0) {
+                alert("الرجاء إدخل مبلغ مالي صحيح.");
+                return;
+            }
+
+            const currencyKey = (currency === "ل.س") ? "syp" : "usd";
+
+            if (currentActiveOpType === 'إيداع') {
+                myBoxFunds[currencyKey] += amount;
+            } else if (currentActiveOpType === 'سحب') {
+                if (myBoxFunds[currencyKey] < amount) {
+                    if (!confirm("تنبيه: السيولة بالصندوق أقل من المبلغ المطلوب. متابعة؟")) return;
+                }
+                myBoxFunds[currencyKey] -= amount;
+            }
+
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} - ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            boxOperationsLog.unshift({
+                id: Date.now(),
+                type: currentActiveOpType,
+                amount: amount,
+                currency: currency,
+                note: note,
+                time: timestamp
+            });
+
+            localStorage.setItem('box_operations_log_core', JSON.stringify(boxOperationsLog));
+            amtInput.value = ''; noteInput.value = '';
+            document.getElementById('operationFormBox').style.display = 'none';
+
+            refreshHomeUiBalances();
+            renderOperationsLogDom();
+        }
+
+        function renderOperationsLogDom() {
+            const container = document.getElementById('logContainer');
+            if(!container) return;
+            container.innerHTML = '';
+
+            if (boxOperationsLog.length === 0) {
+                container.innerHTML = `<div class="empty-log-msg">لا يوجد حركات نقدية مسجلة اليوم.</div>`;
+                return;
+            }
+
+            boxOperationsLog.forEach(op => {
+                const item = document.createElement('div');
+                item.className = 'log-item';
+                const sign = (op.type === 'إيداع') ? '+' : '-';
+                const amtClass = (op.type === 'إيداع') ? 'amt-deposit' : 'amt-withdraw';
+                const currencyUnit = (op.currency === 'ل.س') ? 'ل.س' : '$';
+
+                item.innerHTML = `
+                    <div class="log-details">
+                        <span class="log-title">${op.type} (${op.note})</span>
+                        <span class="log-date">📅 ${op.time}</span>
+                    </div>
+                    <div class="log-amount ${amtClass}">
+                        ${sign}${op.amount.toLocaleString()} ${currencyUnit}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function clearOperationLog() {
+            const code = prompt("أدخل رمز التأكيد (0000) لمسح السجل بالكامل:");
+            if (code === "0000") {
+                boxOperationsLog = [];
+                localStorage.setItem('box_operations_log_core', JSON.stringify(boxOperationsLog));
+                renderOperationsLogDom();
+                alert("تم تصفير السجل بنجاح.");
+            } else if (code !== null) {
+                alert("الرمز غير صحيح.");
+            }
+        }
+
+        function exportLogToText() {
+            if (boxOperationsLog.length === 0) return alert("السجل فارغ.");
+            let str = `📝 كشف حركات الصندوق المباشرة النقدية\n-----------------------------------\n`;
+            boxOperationsLog.forEach((op, idx) => {
+                str += `${idx + 1}. [${op.type}] بمبلغ ${op.amount.toLocaleString()} ${op.currency} | البيان: ${op.note} | الوقت: ${op.time}\n`;
+            });
+            navigator.clipboard.writeText(str).then(() => alert("تم نسخ الكشف للحافظة!"));
+        }
+
+
+        // [واجهة التسويات - المصححة بالكامل والتطبيق المالي الصحيح للسوق]
+        function searchClient(inputElement, dropdownId) {
+            const query = inputElement.value.trim().toLowerCase();
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.innerHTML = '';
+            
+            if (!query) { dropdown.style.display = 'none'; return; }
+            
+            let options = [{ id: 'my-box', name: 'صندوقي (الحساب الأساسي)' }];
+            systemClients.forEach(c => options.push({ id: c.id, name: c.name }));
+            
+            let filtered = options.filter(o => o.name.toLowerCase().includes(query));
+            
+            if(filtered.length > 0) {
+                dropdown.style.display = 'block';
+                filtered.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'autocomplete-item';
+                    row.innerText = item.name;
+                    row.onclick = function() {
+                        inputElement.value = item.name;
+                        inputElement.setAttribute('data-selected-id', item.id);
+                        dropdown.style.display = 'none';
+                        liveCalculateTotal();
+                    };
+                    dropdown.appendChild(row);
+                });
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        function liveCalculateTotal() {
+            const netAmt = parseFloat(document.getElementById('netAmount').value) || 0;
+            const fees = parseFloat(document.getElementById('transferFees').value) || 0;
+            const currency = document.getElementById('settleCurrency').value;
+            
+            // المدين يتحمل الصافي + الأجور دائماً
+            const totalDebtor = netAmt + fees;
+            const unit = currency === "ل.س" ? " ل.س" : " $";
+            document.getElementById('totalDebtorPreview').innerText = totalDebtor.toLocaleString() + unit;
+            return { netAmt, fees, totalDebtor };
+        }
+
+        function commitAccountingSettlement() {
+            const debtorInp = document.getElementById('debtorSearch');
+            const creditorInp = document.getElementById('creditorSearch');
+            const currency = document.getElementById('settleCurrency').value;
+
+            const debtorId = debtorInp.getAttribute('data-selected-id');
+            const creditorId = creditorInp.getAttribute('data-selected-id');
+            
+            const cal = liveCalculateTotal();
+
+            if(!debtorId || !creditorId || cal.netAmt <= 0) {
+                alert("يرجى اختيار الحسابات وتحديد القيم الصافية الحقيقية.");
+                return;
+            }
+
+            if(debtorId === creditorId) {
+                alert("خطأ محاسبي: لا يمكن اختيار نفس الحساب كمدين ودائن في عملية واحدة.");
+                return;
+            }
+
+            let currencyKey = (currency === "ل.س") ? "syp" : "usd";
+            let boxColorStyle = 'amt-deposit'; 
+            let actionTypeLabel = 'حوالة صادرة / تسوية';
+            let finalLoggedAmount = cal.fees; // تتبع حركة الأرباح أو التدفق
+
+            // 1. معالجة حساب المَدين (المرسل) -> يُخصم منه (الصافي + الأجور)
+            if (debtorId === 'my-box') {
+                myBoxFunds[currencyKey] -= cal.totalDebtor;
+                boxColorStyle = 'amt-withdraw';
+                actionTypeLabel = 'حوالة صادرة من صندوقي';
+                finalLoggedAmount = cal.totalDebtor;
+            } else {
+                let clientDebtor = systemClients.find(c => c.id == debtorId);
+                if (clientDebtor) {
+                    clientDebtor[currencyKey] -= cal.totalDebtor; // خفض رصيده بالإجمالي لأنه مدين
+                }
+            }
+
+            // 2. معالجة حساب الدائن (المستفيد) -> يُضاف له (الصافي فقط)
+            if (creditorId === 'my-box') {
+                myBoxFunds[currencyKey] += cal.netAmt;
+                if (debtorId !== 'my-box') {
+                    boxColorStyle = 'amt-deposit';
+                    actionTypeLabel = 'حوالة واردة لصندوقي';
+                    finalLoggedAmount = cal.netAmt;
+                }
+            } else {
+                let clientCreditor = systemClients.find(c => c.id == creditorId);
+                if (clientCreditor) {
+                    clientCreditor[currencyKey] += cal.netAmt; // زيادة رصيده بالصافي لأنه دائن ومستلم
+                }
+            }
+
+            // 3. معالجة أجور التحويل -> تضاف دائماً لصندوقك الخاص كأرباح صافية فوراً
+            myBoxFunds[currencyKey] += cal.fees;
+
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} - ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            settlementsLog.unshift({
+                id: Date.now(),
+                debtorName: debtorInp.value,
+                creditorName: creditorInp.value,
+                net: cal.netAmt,
+                fees: cal.fees,
+                total: cal.totalDebtor,
+                currency: currency,
+                time: timestamp,
+                colorClass: boxColorStyle,
+                label: actionTypeLabel,
+                displayAmt: finalLoggedAmount
+            });
+
+            localStorage.setItem('my_box_funds_core', JSON.stringify(myBoxFunds));
+            localStorage.setItem('accounting_clients_core', JSON.stringify(systemClients));
+            localStorage.setItem('settlements_log_core', JSON.stringify(settlementsLog));
+
+            alert(`تم التثبيت والمقاصة بنجاح!\nالمدين (المُرسِل) خُصم منه: ${cal.totalDebtor.toLocaleString()} ${currency}\nالدائن (المستلم) وصله صافي: ${cal.netAmt.toLocaleString()} ${currency}\nالأرباح المضافة فوراً لصندوقك: ${cal.fees.toLocaleString()} ${currency}`);
+            
+            debtorInp.value = ''; debtorInp.removeAttribute('data-selected-id');
+            creditorInp.value = ''; creditorInp.removeAttribute('data-selected-id');
+            document.getElementById('netAmount').value = '';
+            document.getElementById('transferFees').value = '0';
+            document.getElementById('totalDebtorPreview').innerText = '0';
+            
+            refreshHomeUiBalances();
+            renderSettlementsLogDom();
+            drawClientsDom();
+        }
+
+        function renderSettlementsLogDom() {
+            const container = document.getElementById('settleLogContainer');
+            if(!container) return;
+            container.innerHTML = '';
+
+            if (settlementsLog.length === 0) {
+                container.innerHTML = `<div class="empty-log-msg">لا يوجد عمليات تسوية أو مقاصة مسجلة بعد.</div>`;
+                return;
+            }
+
+            settlementsLog.forEach(log => {
+                const item = document.createElement('div');
+                item.className = 'log-item';
+                const currencyUnit = (log.currency === 'ل.س') ? 'ل.س' : '$';
+                const sign = (log.colorClass === 'amt-deposit') ? '+' : '-';
+
+                item.innerHTML = `
+                    <div class="log-details">
+                        <span class="log-title">${log.label} (من: ${log.debtorName} ➔ إلى: ${log.creditorName})</span>
+                        <span class="log-date">📅 ${log.time} | صافي: ${log.net.toLocaleString()} | أجور: ${log.fees.toLocaleString()}</span>
+                    </div>
+                    <div class="log-amount ${log.colorClass}">
+                        ${sign}${log.displayAmt.toLocaleString()} ${currencyUnit}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function clearSettleLog() {
+            const code = prompt("أدخل رمز التأكيد (0000) لمسح سجل عمليات التسوية والمقاصة بالكامل:");
+            if (code === "0000") {
+                settlementsLog = [];
+                localStorage.setItem('settlements_log_core', JSON.stringify(settlementsLog));
+                renderSettlementsLogDom();
+                alert("تم تصفير كشف سجل التسويات بنجاح.");
+            } else if (code !== null) {
+                alert("الرمز السري غير صحيح!");
+            }
+        }
+
+        function exportSettleLogToText() {
+            if (settlementsLog.length === 0) return alert("السجل فارغ تماماً.");
+            let str = `🔄 كشف ومقاصة عمليات التسوية والحوالات\n-----------------------------------\n`;
+            settlementsLog.forEach((log, idx) => {
+                str += `${idx + 1}. [${log.label}] التوقيت: ${log.time}\n   من المدين: ${log.debtorName} | إلى الدائن: ${log.creditorName}\n   المبلغ الصافي: ${log.net.toLocaleString()} ${log.currency} | الأجور المحصلة لصندوقك: ${log.fees.toLocaleString()} ${log.currency}\n----------------------------\n`;
+            });
+            navigator.clipboard.writeText(str).then(() => alert("تم نسخ كشف التسويات المنسق للحافظة بنجاح!"));
+        }
+
+
+        // [================== واجهة العملاء الثابتة ==================]
+        function calculateMarketStatistics() {
+            let totalSypPos = 0; let totalSypNeg = 0;
+            let totalUsdPos = 0; let totalUsdNeg = 0;
+
+            systemClients.forEach(c => {
+                if(c.syp > 0) totalSypPos += c.syp; else totalSypNeg += Math.abs(c.syp);
+                if(c.usd > 0) totalUsdPos += c.usd; else totalUsdNeg += Math.abs(c.usd);
+            });
+
+            document.getElementById('statsSypPositive').innerText = totalSypPos.toLocaleString() + " ل.س";
+            document.getElementById('statsSypNegative').innerText = totalSypNeg.toLocaleString() + " ل.س";
+            document.getElementById('statsUsdPositive').innerText = "$" + totalUsdPos.toLocaleString();
+            document.getElementById('statsUsdNegative').innerText = "$" + totalUsdNeg.toLocaleString();
+        }
+
+        function drawClientsDom() {
+            localStorage.setItem('accounting_clients_core', JSON.stringify(systemClients));
+            calculateMarketStatistics();
+            
+            const viewList = document.getElementById('dynamicClientsList');
+            if(!viewList) return;
+            viewList.innerHTML = '';
+
+            const filterQuery = document.getElementById('clientSearchInput').value.trim().toLowerCase();
+
+            systemClients.forEach(client => {
+                if (filterQuery && !client.name.toLowerCase().includes(filterQuery)) return; 
+
+                const card = document.createElement('div');
+                card.className = 'client-item-card';
+                card.id = `client-id-${client.id}`;
+                
+                let sypBadge = `<span class="badge-status badge-zero">متطابق</span>`;
+                let sypColor = '#475569';
+                if(client.syp > 0) {
+                    sypBadge = `<span class="badge-status badge-us">لنا معه</span>`;
+                    sypColor = '#10b981';
+                } else if(client.syp < 0) {
+                    sypBadge = `<span class="badge-status badge-them">له معنا</span>`;
+                    sypColor = '#ef4444';
+                }
+
+                let usdBadge = `<span class="badge-status badge-zero">متطابق</span>`;
+                let usdColor = '#475569';
+                if(client.usd > 0) {
+                    usdBadge = `<span class="badge-status badge-us">لنا معه</span>`;
+                    usdColor = '#10b981';
+                } else if(client.usd < 0) {
+                    usdBadge = `<span class="badge-status badge-them">له معنا</span>`;
+                    usdColor = '#ef4444';
+                }
+
+                card.innerHTML = `
+                    <div class="client-item-trigger" onclick="fireDropdown(${client.id})">
+                        <div class="client-title">
+                            <span class="arrow-indicator">▼</span>
+                            <span>${client.name}</span>
+                        </div>
+                    </div>
+                    <div class="client-hidden-panel">
+                        <div class="row-data">
+                            <span>حساب الليرة السورية: ${sypBadge}</span>
+                            <span class="val" style="color: ${sypColor}">${Math.abs(client.syp).toLocaleString()} ل.س</span>
+                        </div>
+                        <div class="row-data">
+                            <span>حساب الدولار الأميركي: ${usdBadge}</span>
+                            <span class="val" style="color: ${usdColor}">$ ${Math.abs(client.usd).toLocaleString()}</span>
+                        </div>
+                        <div class="panel-control-btns">
+                            <button class="btn-whatsapp-share" onclick="sendWhatsappFormat(${client.id})">📋 نسخ للواتساب</button>
+                            <button class="btn-delete-item" onclick="removeClient(${client.id})">🗑️ حذف الحساب</button>
+                        </div>
+                    </div>
+                `;
+                viewList.appendChild(card);
+            });
+        }
+
+        function fireDropdown(id) { document.getElementById(`client-id-${id}`).classList.toggle('open'); }
+
+        function insertClient() {
+            const inp = document.getElementById('targetClientName');
+            if(!inp || !inp.value.trim()) return alert("يرجى إدخال اسم العميل الجديد أولاً.");
+            
+            const isExist = systemClients.some(c => c.name.toLowerCase() === inp.value.trim().toLowerCase());
+            if(isExist) return alert("هذا الاسم مسجل في الدليل مسبقاً.");
+
+            systemClients.push({ id: Date.now(), name: inp.value.trim(), syp: 0, usd: 0 });
+            inp.value = '';
+            drawClientsDom();
+        }
+
+        function removeClient(id) {
+            const target = systemClients.find(c => c.id === id);
+            if(!target) return;
+
+            if(confirm(`هل أنت متأكد تماماً من حذف العميل [${target.name}] نهائياً من النظام؟`)) {
+                systemClients = systemClients.filter(c => c.id !== id);
+                drawClientsDom();
+            }
+        }
+
+        function sendWhatsappFormat(id) {
+            const target = systemClients.find(c => c.id === id);
+            if(!target) return;
+            let s = target.syp > 0 ? `لنا طرفكم ${target.syp.toLocaleString()} ل.س` : (target.syp < 0 ? `لكم بطرفنا ${Math.abs(target.syp).toLocaleString()} ل.س` : `الحساب متطابق (0) ل.س`);
+            let u = target.usd > 0 ? `لنا طرفكم ${target.usd.toLocaleString()} دولار` : (target.usd < 0 ? `لكم بطرفنا ${Math.abs(target.usd).toLocaleString()} دولار` : `الحساب متطابق (0) دولار`);
+            navigator.clipboard.writeText(`مطابقة حسابك لليوم:\n${s}\n${u}`).then(() => alert("تم نسخ مطابقة الحساب للحافظة بنجاح!"));
+        }
+
+        // إدارة التبديل
+        function navigateTo(targetPageId, headerText, clickedTab) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
+            const target = document.getElementById(targetPageId);
+            if(target) target.classList.add('active-page');
+            document.getElementById('globalHeaderTitle').innerText = headerText;
+            document.querySelectorAll('.navigation-tab').forEach(t => t.classList.remove('tab-active'));
+            clickedTab.classList.add('tab-active');
+            
+            if(targetPageId === 'view-home') {
+                refreshHomeUiBalances();
+                renderOperationsLogDom();
+            } else if(targetPageId === 'view-settlements') {
+                renderSettlementsLogDom();
+            } else if(targetPageId === 'view-clients') {
+                drawClientsDom();
+            }
+        }
+
+        window.onload = function() {
+            refreshHomeUiBalances();
+            renderOperationsLogDom();
+            renderSettlementsLogDom();
+            drawClientsDom();
+        };
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
+    </script>
+</body>
+</html>
